@@ -2928,6 +2928,12 @@
     githubId = 7047019;
     name = "Florent Becker";
   };
+  galagora = {
+    email = "lightningstrikeiv@gmail.com";
+    github = "galagora";
+    githubId = 45048741;
+    name = "Alwanga Oyango";
+  };
   gamb = {
     email = "adam.gamble@pm.me";
     github = "gamb";
@@ -3057,6 +3063,12 @@
     github = "gnxlxnxx";
     githubId = 25820499;
     name = "Roman Kretschmer";
+  };
+  goertzenator = {
+    email = "daniel.goertzen@gmail.com";
+    github = "goertzenator";
+    githubId = 605072;
+    name = "Daniel Goertzen";
   };
   goibhniu = {
     email = "cillian.deroiste@gmail.com";
@@ -5197,6 +5209,12 @@
     github = "metadark";
     githubId = 382041;
   };
+  meutraa = {
+    email = "paul+nixpkgs@lost.host";
+    name = "Paul Meredith";
+    github = "meutraa";
+    githubId = 68550871;
+  };
   mfossen = {
     email = "msfossen@gmail.com";
     github = "mfossen";
@@ -6315,6 +6333,12 @@
     github = "pjbarnoy";
     githubId = 119460;
     name = "Perry Barnoy";
+  };
+  pjjw = {
+    email = "peter@shortbus.org";
+    github = "pjjw";
+    githubId = 638;
+    name = "Peter Woodman";
   };
   pjones = {
     email = "pjones@devalot.com";

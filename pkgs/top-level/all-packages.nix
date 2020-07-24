@@ -1707,6 +1707,10 @@ in
     inherit (darwin.apple_sdk.frameworks) Security;
   };
 
+  dijo = callPackage ../tools/misc/dijo {
+    inherit (darwin.apple_sdk.frameworks) CoreServices;
+  };
+
   ding = callPackage ../applications/misc/ding {
     aspellDicts_de = aspellDicts.de;
     aspellDicts_en = aspellDicts.en;
@@ -2116,6 +2120,8 @@ in
   mkspiffs-presets = recurseIntoAttrs (callPackages ../tools/filesystems/mkspiffs/presets.nix { });
 
   mlarchive2maildir = callPackage ../applications/networking/mailreaders/mlarchive2maildir { };
+
+  molly-brown = callPackage ../servers/gemini/molly-brown { };
 
   monetdb = callPackage ../servers/sql/monetdb { };
 
@@ -3845,10 +3851,6 @@ in
   gnupg1orig = callPackage ../tools/security/gnupg/1.nix { };
   gnupg1compat = callPackage ../tools/security/gnupg/1compat.nix { };
   gnupg1 = gnupg1compat;    # use config.packageOverrides if you prefer original gnupg1
-  gnupg20 = callPackage ../tools/security/gnupg/20.nix {
-    guiSupport = stdenv.isDarwin;
-    pinentry = if stdenv.isDarwin then pinentry_mac else pinentry-gtk2;
-  };
   gnupg22 = callPackage ../tools/security/gnupg/22.nix {
     guiSupport = stdenv.isDarwin;
     pinentry = if stdenv.isDarwin then pinentry_mac else pinentry-gtk2;
@@ -4145,6 +4147,8 @@ in
   hasmail = callPackage ../applications/networking/mailreaders/hasmail { };
 
   hal-flash = callPackage ../os-specific/linux/hal-flash { };
+
+  hal-hardware-analyzer = libsForQt5.callPackage ../applications/science/electronics/hal-hardware-analyzer { };
 
   half = callPackage ../development/libraries/half { };
 
@@ -4901,10 +4905,6 @@ in
   nodejs-slim-12_x = callPackage ../development/web/nodejs/v12.nix {
     enableNpm = false;
   };
-  nodejs-13_x = callPackage ../development/web/nodejs/v13.nix { };
-  nodejs-slim-13_x = callPackage ../development/web/nodejs/v13.nix {
-    enableNpm = false;
-  };
   nodejs-14_x = callPackage ../development/web/nodejs/v14.nix { };
   nodejs-slim-14_x = callPackage ../development/web/nodejs/v14.nix {
     enableNpm = false;
@@ -5077,6 +5077,8 @@ in
     libwebsockets_3_2
     libwebsockets_4_0;
   libwebsockets = libwebsockets_3_2;
+
+  licensee = callPackage ../tools/package-management/licensee { };
 
   lidarr = callPackage ../servers/lidarr { };
 
@@ -6115,7 +6117,10 @@ in
 
   podiff = callPackage ../tools/text/podiff { };
 
-  podman = callPackage ../applications/virtualization/podman/wrapper.nix { };
+  podman = if stdenv.isDarwin then
+    callPackage ../applications/virtualization/podman { }
+  else
+    callPackage ../applications/virtualization/podman/wrapper.nix { };
   podman-unwrapped = callPackage ../applications/virtualization/podman { };
 
   podman-compose = python3Packages.callPackage ../applications/virtualization/podman-compose {};
@@ -6869,6 +6874,8 @@ in
   spaceFM = callPackage ../applications/misc/spacefm { };
 
   speech-denoiser = callPackage ../applications/audio/speech-denoiser {};
+
+  splot = haskell.lib.justStaticExecutables haskellPackages.splot;
 
   squashfsTools = callPackage ../tools/filesystems/squashfs { };
 
@@ -8357,8 +8364,12 @@ in
   gerbil-support = callPackage ../development/compilers/gerbil/gerbil-support.nix { };
   gerbilPackages-unstable = gerbil-support.gerbilPackages-unstable; # NB: don't recurseIntoAttrs for (unstable!) libraries
 
-  gccFun = callPackage (if stdenv.targetPlatform.isVc4 then ../development/compilers/gcc/6 else ../development/compilers/gcc/9);
-  gcc = if stdenv.targetPlatform.isVc4 then gcc6 else gcc9;
+  gccFun = callPackage (if (with stdenv.targetPlatform; isVc4 || libc == "relibc")
+    then ../development/compilers/gcc/6
+    else ../development/compilers/gcc/9);
+  gcc = if (with stdenv.targetPlatform; isVc4 || libc == "relibc")
+    then gcc6 else gcc9;
+
   gcc-unwrapped = gcc.cc;
 
   gccStdenv = if stdenv.cc.isGNU then stdenv else stdenv.override {
@@ -8493,7 +8504,11 @@ in
     libcCross = if stdenv.targetPlatform != stdenv.buildPlatform then libcCross else null;
     threadsCross = if stdenv.targetPlatform != stdenv.buildPlatform then threadsCross else null;
 
-    isl = if !stdenv.isDarwin then isl_0_14 else null;
+    isl = if stdenv.isDarwin
+            then null
+          else if stdenv.targetPlatform.isRedox
+            then isl_0_17
+          else isl_0_14;
   }));
 
   gcc7 = lowPrio (wrapCC (callPackage ../development/compilers/gcc/7 {
@@ -8717,7 +8732,7 @@ in
 
   # Please update doc/languages-frameworks/haskell.section.md, “Our
   # current default compiler is”, if you bump this:
-  haskellPackages = dontRecurseIntoAttrs haskell.packages.ghc883;
+  haskellPackages = dontRecurseIntoAttrs haskell.packages.ghc884;
 
   inherit (haskellPackages) ghc;
 
@@ -9670,7 +9685,7 @@ in
   kanif = callPackage ../applications/networking/cluster/kanif { };
 
   lumo = callPackage ../development/interpreters/clojurescript/lumo {
-    nodejs = nodejs-13_x;
+    nodejs = nodejs_latest;
   };
 
   lxappearance = callPackage ../desktops/lxde/core/lxappearance { };
@@ -11596,7 +11611,13 @@ in
     ogre = ogre1_10;
   };
 
-  certbot = python3Packages.callPackage ../tools/admin/certbot { };
+  certbot = python3.pkgs.toPythonApplication python3.pkgs.certbot;
+
+  certbot-full = certbot.withPlugins (cp: with cp; [
+    certbot-dns-cloudflare
+    certbot-dns-rfc2136
+    certbot-dns-route53
+  ]);
 
   caf = callPackage ../development/libraries/caf {};
 
@@ -12149,6 +12170,7 @@ in
     else if name == "libSystem" then targetPackages.darwin.xcode
     else if name == "nblibc" then targetPackages.netbsdCross.libc
     else if name == "wasilibc" then targetPackages.wasilibc or wasilibc
+    else if name == "relibc" then targetPackages.relibc or relibc
     else if stdenv.targetPlatform.isGhcjs then null
     else throw "Unknown libc ${name}";
 
@@ -12162,6 +12184,8 @@ in
   wasilibc = callPackage ../development/libraries/wasilibc {
     stdenv = crossLibcStdenv;
   };
+
+  relibc = callPackage ../development/libraries/relibc { };
 
   # Only supported on Linux, using glibc
   glibcLocales = if stdenv.hostPlatform.libc == "glibc" then callPackage ../development/libraries/glibc/locales.nix { } else null;
@@ -14735,7 +14759,13 @@ in
 
   rubberband = callPackage ../development/libraries/rubberband { };
 
+  /* This package references ghc844, which we no longer have. Unfortunately, I
+     have been unable to mark it as "broken" in a way that the ofBorg bot
+     recognizes. Since I don't want to merge code into master that generates
+     evaluation errors, I have no other idea but to comment it out entirely.
+
   sad = callPackage ../applications/science/logic/sad { };
+   */
 
   safefile = callPackage ../development/libraries/safefile {};
 
@@ -15479,6 +15509,8 @@ in
   yubikey-personalization = callPackage ../tools/misc/yubikey-personalization { };
 
   yubikey-personalization-gui = libsForQt5.callPackage ../tools/misc/yubikey-personalization-gui { };
+
+  yubikey-agent = callPackage ../tools/security/yubikey-agent { };
 
   zchunk = callPackage ../development/libraries/zchunk { };
 
@@ -16263,6 +16295,13 @@ in
   };
 
   mongodb-4_0 = callPackage ../servers/nosql/mongodb/v4_0.nix {
+    sasl = cyrus_sasl;
+    boost = boost169;
+    inherit (darwin) cctools;
+    inherit (darwin.apple_sdk.frameworks) CoreFoundation Security;
+  };
+
+  mongodb-4_2 = callPackage ../servers/nosql/mongodb/v4_2.nix {
     sasl = cyrus_sasl;
     boost = boost169;
     inherit (darwin) cctools;
@@ -17396,6 +17435,8 @@ in
     wireguard = if lib.versionOlder kernel.version "5.6" then callPackage ../os-specific/linux/wireguard { } else null;
 
     x86_energy_perf_policy = callPackage ../os-specific/linux/x86_energy_perf_policy { };
+
+    xpadneo = callPackage ../os-specific/linux/xpadneo { };
 
     zenpower = callPackage ../os-specific/linux/zenpower { };
 
@@ -20096,6 +20137,8 @@ in
 
   fte = callPackage ../applications/editors/fte { };
 
+  g933-utils = callPackage ../tools/misc/g933-utils { };
+
   game-music-emu = callPackage ../applications/audio/game-music-emu { };
 
   gavrasm = callPackage ../development/compilers/gavrasm { };
@@ -21412,6 +21455,8 @@ in
 
   netease-cloud-music = callPackage ../applications/audio/netease-cloud-music {};
 
+  newsflash = callPackage ../applications/networking/feedreaders/newsflash { };
+
   nicotine-plus = callPackage ../applications/networking/soulseek/nicotine-plus {
     geoip = geoipWithDatabase;
   };
@@ -22597,7 +22642,8 @@ in
 
   symlinks = callPackage ../tools/system/symlinks { };
 
-  syncplay = python3.pkgs.callPackage ../applications/networking/syncplay { };
+  # this can be changed to python3 once pyside2 is updated to support the latest python version
+  syncplay = python37.pkgs.callPackage ../applications/networking/syncplay { };
 
   inherit (callPackages ../applications/networking/syncthing { })
     syncthing
@@ -23901,13 +23947,11 @@ in
     inherit (darwin.apple_sdk.frameworks) Carbon CoreServices;
   };
 
-  cataclysm-dda = callPackage ../games/cataclysm-dda {
-    inherit (darwin.apple_sdk.frameworks) CoreFoundation Cocoa;
-  };
+  cataclysmDDA = callPackage ../games/cataclysm-dda { };
 
-  cataclysm-dda-git = callPackage ../games/cataclysm-dda/git.nix {
-    inherit (darwin.apple_sdk.frameworks) CoreFoundation Cocoa;
-  };
+  cataclysm-dda = cataclysmDDA.stable.tiles;
+
+  cataclysm-dda-git = cataclysmDDA.git.tiles;
 
   chessdb = callPackage ../games/chessdb { };
 
@@ -26317,6 +26361,8 @@ in
 
   nix-top = callPackage ../tools/package-management/nix-top { };
 
+  nix-tree = haskell.lib.justStaticExecutables (haskellPackages.nix-tree);
+
   nix-universal-prefetch = callPackage ../tools/package-management/nix-universal-prefetch { };
 
   nix-repl = throw (
@@ -26620,6 +26666,8 @@ in
   terraform-providers = recurseIntoAttrs (
     callPackage ../applications/networking/cluster/terraform-providers {}
   );
+
+  terraform-compliance = python3Packages.callPackage ../applications/networking/cluster/terraform-compliance {};
 
   terraform-docs = callPackage ../applications/networking/cluster/terraform-docs {};
 
