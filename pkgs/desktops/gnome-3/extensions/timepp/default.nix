@@ -2,13 +2,13 @@
 
 stdenv.mkDerivation rec {
   pname = "gnome-shell-extension-timepp";
-  version = "unstable-2020-03-15";
+  version = "unstable-2021-03-27";
 
   src = fetchFromGitHub {
     owner = "zagortenay333";
     repo = "timepp__gnome";
-    rev = "34ae477a51267cc1e85992a80cf85a1a7b7005c1";
-    sha256 = "1v0xbrp0x5dwizscxh7h984pax4n92bj8iyw3qvjk27ynpxq8ag1";
+    rev = "23f387de21aeddf823e4c746b1971b1759c8f5d2";
+    sha256 = "0mk805rf492fw7v2icilbn7rc2kc3qgfahp6pzjqppnj9sif5fcy";
   };
 
   uuid = "timepp@zagortenay333";
